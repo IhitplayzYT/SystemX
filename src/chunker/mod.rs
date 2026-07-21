@@ -1,2 +1,12 @@
 pub mod chunker;
 pub mod word;
+pub mod nword;
+pub mod line;
+pub mod nline;
+pub mod para;
+pub mod npara;
+pub mod sentence;
+pub mod colon;
+pub mod char;
+pub mod nchar;
+pub mod semantic;

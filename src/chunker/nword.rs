@@ -1,13 +1,22 @@
 pub mod chunk{
     use crate::chunker::chunker::{t_Chunk,Chunk};
-struct WordChunker;
 
-impl t_Chunk for WordChunker{
+pub struct NWordChunker{
+pub n:usize    
+}
+impl Default for NWordChunker{
+    fn default() -> Self {
+        Self { n: 2 }
+    }
+}
 
+
+impl t_Chunk for NWordChunker{
     fn chunk(&self,txt:&str) -> Vec<Chunk> {
         let txt = String::from_utf8(txt.bytes().filter(|z| {(z >= &b'a' && z <= &b'z') || (z >= &b'A' && z <= &b'Z') || (z >= &b'0' && z <= &b'9') || z == &b' ' || z == &b'\n' || z == &b'\t'}).collect::<Vec<u8>>()).unwrap();
-        txt.split(" ").map(|x| x.to_string()).collect()
-    }    
+        let words: Vec<_> = txt.split_whitespace().collect();
+        words.chunks(self.n).map(|chunk| chunk.join(" ")).collect()
+    }   
 
 }
 }

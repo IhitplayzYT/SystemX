@@ -7,10 +7,11 @@ pub enum Chunker{
     SENTENCE,
     COLON,
     SEMANTIC,
-    FXNBLOCK,
+    CHAR,
     NWORD(usize),
     NLINE(usize),
     NPARA(usize),
+    NCHAR(u8,usize),
 }
 
 impl From<String> for Chunker{
@@ -22,9 +23,13 @@ fn from(value: String) -> Self {
     "sentence" => Chunker::SENTENCE,
     "colon" => Chunker::COLON,
     "semantic" => Chunker::SEMANTIC,
-    "fxn" => Chunker::FXNBLOCK,
+    "char" => Chunker::CHAR,
     _ => {Chunker::NLINE(usize::MAX)}
     };
+    if value.starts_with("nchar"){
+       let (st,ed,md) = (value.find("(").unwrap(),value.find(")").unwrap(),value.find(",").unwrap());
+       return Chunker::NCHAR(value[st+1..md].parse::<u8>().expect("Expected a single charecter"), value[md+1..ed].parse::<usize>().expect("Usize expected"))
+    }
     if let Chunker::NLINE(x) = ret && x == usize::MAX{
         let (st,ed) = (value.find("(").unwrap(),value.find(")").unwrap());
         let val = value[st+1..ed].parse::<usize>().expect("Usize expected");
