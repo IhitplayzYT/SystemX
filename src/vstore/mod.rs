@@ -6,8 +6,8 @@ use uuid::Uuid;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct VectorStoreConfig {
-    pub path: String,
-    pub collection_name: String,
+    pub path: String, // Where we store the embedded store for resilience
+    pub collection_name: String, 
 }
 
 impl Default for VectorStoreConfig {
@@ -51,11 +51,12 @@ impl VectorStore {
         Self::new(config)
     }
 
+    // Insert single data into vstore
     pub fn insert(
         &self,
         id: Option<String>,
         vector: Vec<f32>,
-        payload: Option<HashMap<String, serde_json::Value>>,
+        meta: Option<HashMap<String, serde_json::Value>>,
     ) -> Result<String, Box<dyn std::error::Error>> {
         let point_id = id.unwrap_or_else(|| Uuid::new_v4().to_string());
         
@@ -64,7 +65,7 @@ impl VectorStore {
         self.vectors_tree.insert(point_id.as_bytes(), vector_bytes)?;
         
         // Store metadata
-        if let Some(metadata) = payload {
+        if let Some(metadata) = meta {
             let metadata_bytes = serde_json::to_vec(&metadata)?;
             self.metadata_tree.insert(point_id.as_bytes(), metadata_bytes)?;
         }
@@ -73,19 +74,20 @@ impl VectorStore {
         Ok(point_id)
     }
 
+    // Insert list of data into vstore
     pub fn insert_batch(
         &self,
         points: Vec<(Option<String>, Vec<f32>, Option<HashMap<String, serde_json::Value>>)>,
     ) -> Result<Vec<String>, Box<dyn std::error::Error>> {
         let mut ids = Vec::new();
         
-        for (id, vector, payload) in points {
+        for (id, vector, meta) in points {
             let point_id = id.unwrap_or_else(|| Uuid::new_v4().to_string());
             
             let vector_bytes = bincode::serialize(&vector)?;
             self.vectors_tree.insert(point_id.as_bytes(), vector_bytes)?;
             
-            if let Some(metadata) = payload {
+            if let Some(metadata) = meta {
                 let metadata_bytes = serde_json::to_vec(&metadata)?;
                 self.metadata_tree.insert(point_id.as_bytes(), metadata_bytes)?;
             }
@@ -97,6 +99,7 @@ impl VectorStore {
         Ok(ids)
     }
 
+    // Search a single id for embedding
     pub fn get(&self, id: &str) -> Result<Option<Vec<f32>>, Box<dyn std::error::Error>> {
         if let Some(vector_bytes) = self.vectors_tree.get(id.as_bytes())? {
             let vector = bincode::deserialize(&vector_bytes)?;
@@ -106,6 +109,7 @@ impl VectorStore {
         }
     }
 
+    // Search a single id for metadata 
     pub fn get_metadata(&self, id: &str) -> Result<Option<HashMap<String, serde_json::Value>>, Box<dyn std::error::Error>> {
         if let Some(metadata_bytes) = self.metadata_tree.get(id.as_bytes())? {
             let metadata = serde_json::from_slice(&metadata_bytes)?;
@@ -115,7 +119,7 @@ impl VectorStore {
         }
     }
 
-    pub fn search(
+    pub fn get_top_k(
         &self,
         query_vector: &[f32],
         top_k: usize,
@@ -153,7 +157,6 @@ impl VectorStore {
             let id = String::from_utf8_lossy(&key).to_string();
             let vector: Vec<f32> = bincode::deserialize(&value)?;
             
-            // Check metadata filter
             if let Some(metadata_bytes) = self.metadata_tree.get(&key)? {
                 let metadata: HashMap<String, serde_json::Value> = serde_json::from_slice(&metadata_bytes)?;
                 

@@ -1,6 +1,6 @@
 pub mod chunk{
     use crate::chunker::chunker::{t_Chunk,Chunk};
-struct ColonChunker;
+pub struct ColonChunker;
 
 impl t_Chunk for ColonChunker{
 

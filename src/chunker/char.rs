@@ -1,6 +1,6 @@
 pub mod chunk{
     use crate::chunker::chunker::{t_Chunk,Chunk};
-struct CharChunker{
+pub struct CharChunker{
     pub ch:u8
 }
 

@@ -1,6 +1,6 @@
 pub mod chunk{
     use crate::chunker::chunker::{t_Chunk,Chunk};
-struct SentenceChunker;
+pub struct SentenceChunker;
 
 impl t_Chunk for SentenceChunker{
 

@@ -1,6 +1,6 @@
 pub mod chunk{
     use crate::chunker::chunker::{t_Chunk,Chunk};
-struct ParaChunker;
+pub struct ParaChunker;
 
 impl t_Chunk for ParaChunker{
 

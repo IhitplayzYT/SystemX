@@ -1,6 +1,6 @@
 pub mod chunk{
     use crate::chunker::chunker::{t_Chunk,Chunk};
-struct LineChunker;
+pub struct LineChunker;
 
 impl t_Chunk for LineChunker{
 

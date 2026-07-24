@@ -7,7 +7,7 @@ pub enum Chunker{
     SENTENCE,
     COLON,
     SEMANTIC,
-    CHAR,
+    CHAR(char),
     NWORD(usize),
     NLINE(usize),
     NPARA(usize),
@@ -23,9 +23,13 @@ fn from(value: String) -> Self {
     "sentence" => Chunker::SENTENCE,
     "colon" => Chunker::COLON,
     "semantic" => Chunker::SEMANTIC,
-    "char" => Chunker::CHAR,
     _ => {Chunker::NLINE(usize::MAX)}
     };
+    if value.starts_with("char"){
+
+       let (st,ed) = (value.find("(").unwrap(),value.find(")").unwrap());
+       return Chunker::CHAR(value[st+1..ed].parse::<char>().expect("Charecter expected"));
+    }
     if value.starts_with("nchar"){
        let (st,ed,md) = (value.find("(").unwrap(),value.find(")").unwrap(),value.find(",").unwrap());
        return Chunker::NCHAR(value[st+1..md].parse::<u8>().expect("Expected a single charecter"), value[md+1..ed].parse::<usize>().expect("Usize expected"))

@@ -1,6 +1,6 @@
 pub mod chunk{
     use crate::chunker::chunker::{t_Chunk,Chunk};
-struct WordChunker;
+pub struct WordChunker;
 
 impl t_Chunk for WordChunker{
 

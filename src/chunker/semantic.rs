@@ -3,7 +3,7 @@ pub mod chunk{
     use std::collections::HashMap;
     use regex::Regex;
 
-struct SemanticChunker;
+pub struct SemanticChunker;
 
 impl t_Chunk for SemanticChunker{
 

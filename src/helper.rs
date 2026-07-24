@@ -1,7 +1,9 @@
 #[allow(dead_code,non_camel_case_types,non_snake_case)]
 
 pub mod Helper {
-    use crate::chunker::chunker::Chunker;
+    use std::{fs::{self, exists}, path::Path};
+
+use crate::chunker::chunker::Chunker;
 
 
 
@@ -12,43 +14,33 @@ pub mod Helper {
     #[derive(Debug,Clone)]
     pub struct CLI {
         pub debug: bool,
-        pub srcdir: Option<String>,
-        pub ifile: Option<String>,
-        pub port:u16,
-        pub url: Option<String>,
-        pub user: String,
-        pub password: Option<String>,
-        pub database:String,
+        pub srcdir: Vec<String>,
+        pub srcfile: Vec<String>,
         pub chunker:Chunker,
-        pub src: Vec<String>,
+        pub query: String,
+        pub context_file: Option<String>,
+        pub model:String,
+        pub temp: f32
+        
     }
 
     impl CLI {
         pub fn new() -> CLI {
             Self {
                 debug: false,
-                srcdir: None,
-                ifile: None,
-                port:3306,
-                url:None,
-                user:"root".to_string(),
-                password: None,
+                srcdir: vec![],
                 chunker:Chunker::LINE,
-                database:"mydb".to_string(),
-                src:vec![]
+                srcfile:vec![],
+                query: String::new(),
+                context_file: None,
+                model: "llama3.2".to_string(),
+                temp: 0.4
             }
         }
 
         pub fn Parse_Args(&mut self) {
             let clargs = std::env::args().collect::<Vec<String>>();
-            self.user = match std::env::var("DB_USER") {
-               Ok(u) => u,
-               _ => "root".to_string()
-            };
-            self.password = match std::env::var("DB_PASSWD") {
-               Ok(u) => {if u.is_empty() {None} else {Some(u)}},
-               _ => None
-            };
+
             if clargs.is_empty() {
                 return;
             }
@@ -60,25 +52,21 @@ pub mod Helper {
                     self.debug = true
                 } else if i.starts_with("--srcdir=") || i.starts_with("--SRC_DIR=") {
                     let idx = i.find("=").unwrap();
-                    self.srcdir = Some(i[idx + 1..].to_string());
-                } else if i.starts_with("--file=") || i.starts_with("--FILE=") {
+                    self.srcdir.push(i[idx + 1..].to_string());
+                }  else if i.starts_with("--srcfile=") || i.starts_with("--SRC_FILE=") {
                     let idx = i.find("=").unwrap();
-                    self.ifile = Some(i[idx + 1..].to_string());
-                } else if i.starts_with("--port=") || i.starts_with("-p=") {
-                    let idx = i.find("=").unwrap();
-                    self.port = i[idx + 1..].parse::<u16>().expect("Port is a unsigned 16 bit integer(0 - 65536)");
-                } else if i.starts_with("--url=") || i.starts_with("-u=") {
-                    let idx = i.find("=").unwrap();
-                    self.url = Some(i[idx + 1..].to_string());
+                    self.srcfile.push(i[idx + 1..].to_string());
                 } else if i.starts_with("--chunker=") || i.starts_with("-s="){
                     let idx = i.find("=").unwrap();
-                    self.chunker = Chunker::from(i[idx + 1..].to_string());
-                } else if i.starts_with("--database=") || i.starts_with("-db="){
-                    let idx = i.find("=").unwrap();
-                    self.database = i[idx + 1..].to_string();
-                } else if i.starts_with("--src=") || i.starts_with("-SRC="){
-                    let idx = i.find("=").unwrap();
-                    self.src.push(i[idx + 1..].to_string());
+                    self.chunker = Chunker::from(i[idx + 1..].trim().to_string());
+                } else if i.starts_with("--query=") || i.starts_with("-q="){
+                    self.query = i[i.find("=").unwrap()+1..].trim().to_string();
+                } else if i.starts_with("--context=") || i.starts_with("-c="){
+                    self.context_file = Some(i[i.find("=").unwrap()+1..].trim().to_string());
+                } else if i.starts_with("--model=") || i.starts_with("-m="){
+                    self.model = i[i.find("=").unwrap()+1..].trim().to_string();
+                } else if i.starts_with("--temp=") || i.starts_with("-t="){
+                    self.temp = i[i.find("=").unwrap()+1..].trim().parse::<f32>().expect("Temp is a float between 0.0 - 2.0,decides creativity of model");
                 }
                  else {
                     Help();
@@ -92,4 +80,22 @@ pub mod Helper {
         println!("{DBG_STR}");
         std::process::exit(OK);
     }
+
+    pub fn unwrap_dirs(mut dirs:Vec<String>,ret: &mut Vec<String>){
+        for i in &dirs.clone(){
+            let x = Path::new(i);
+            if x.exists(){
+                if x.is_file(){
+                    ret.push(i.to_string());
+                }else if x.is_dir(){
+                    dirs.append(&mut fs::read_dir(x).unwrap().into_iter().map(|m| {let n = m.unwrap();return n.path().to_str().unwrap().to_string()}).collect::<Vec<String>>());
+                    unwrap_dirs(dirs, ret);
+                    return;
+                }
+            }
+            
+        }
+
+    }
+
 }
