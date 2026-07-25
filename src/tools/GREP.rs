@@ -5,7 +5,7 @@ use std::fs;
 use std::path::PathBuf;
 use walkdir::WalkDir;
 
-use crate::tool::tools::Tools::{AgentContext, Tool};
+use crate::tools::tools::Tools::{AgentContext, Tool};
 
 pub fn grep(
     cwd: &PathBuf,

@@ -8,8 +8,11 @@ use crate::chunker::chunker::Chunker;
 
 
     const DBG_STR: &str = "Usage";
-    const OK: i32 = 0;
-    const ERR: i32 = 1;
+    pub const OK: i32 = 0;
+    pub const ERR: i32 = 1;
+    pub const END_POINT:&str = "http://localhost:11434";
+    pub const MODEL:&str = "llama3.2";
+ 
 
     #[derive(Debug,Clone)]
     pub struct CLI {

@@ -2,8 +2,8 @@ pub mod cat_file{
     use std::{fs, path::PathBuf};
 
 
-
-use crate::tool::tools::Tools::{AgentContext, Tool};
+    use anyhow::anyhow;
+    use crate::tools::tools::Tools::{AgentContext, Tool};
 
     pub fn cat_file(cwd:&PathBuf,ws: &PathBuf,target:&str) -> String{
         let target_path = cwd.join(PathBuf::from(&target)).canonicalize().unwrap();

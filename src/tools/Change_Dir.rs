@@ -4,7 +4,7 @@ pub mod change_dir{
 use anyhow::anyhow;
 use path_clean::PathClean;
 
-use crate::tool::tools::Tools::{AgentContext, Tool};
+use crate::tools::tools::Tools::{AgentContext, Tool};
 
 
     pub fn change_dir(cwd:&mut PathBuf,ws:&PathBuf,target:&str) -> String{
