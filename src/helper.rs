@@ -1,7 +1,7 @@
 #[allow(dead_code,non_camel_case_types,non_snake_case)]
 
 pub mod Helper {
-    use std::{fs::{self, exists}, path::Path};
+    use std::{fs::{self, exists}, path::{Path, PathBuf}};
 
 use crate::{chunker::chunker::Chunker, vstore::embed::embed::EmbedMethod};
 
@@ -31,7 +31,12 @@ use crate::{chunker::chunker::Chunker, vstore::embed::embed::EmbedMethod};
         pub collection: Option<String>,
         pub embed_model:Option<EmbedMethod>,
         pub window_len: Option<usize>
-        
+        pub url: String,
+        pub token_limits:(usize,usize,usize), // (min_context,max_context,max_output)
+        pub root_dir: PathBuf,
+        pub steps:usize,
+        pub memory:Option<String>,
+        pub sprompt:Option<String>,
     }
 
     impl CLI {
@@ -92,6 +97,26 @@ use crate::{chunker::chunker::Chunker, vstore::embed::embed::EmbedMethod};
                     self.embed_model = Some(EmbedMethod::from(i[i.find("=").unwrap()+1..].trim().to_string()));
                 } else if i.starts_with("--winlen=") || i.starts_with("--win-len=") || i.starts_with("--win=") || i.starts_with("-w="){
                     self.window_len = Some(i[i.find("=").unwrap()+1..].trim().parse::<usize>().expect("Win Len is a optional param that can be provided when using cluster embedder"));
+                } else if i.starts_with("--url=") || i.starts_with("-u="){
+                    self.url = i[i.find("=").unwrap()+1..].trim().to_string();
+                } else if i.starts_with("--min="){
+                    self.token_limits.0 = i[i.find("=").unwrap()+1..].trim().parse::<usize>().expect("Min Tokens is a non negative usize"); 
+                } else if i.starts_with("--max="){
+                    self.token_limits.1 = i[i.find("=").unwrap()+1..].trim().parse::<usize>().expect("Max Tokens is a non negative usize,for unbounded limit use --max=0"); 
+                    if self.token_limits.1 == 0{
+                        self.token_limits.1 = usize::MAX;
+                    }
+                } else if i.starts_with("--maxout="){
+                    self.token_limits.2 = i[i.find("=").unwrap()+1..].trim().parse::<usize>().expect("Max Output Tokens is a non negative usize"); 
+                }
+                 else if i.starts_with("--root=") || i.starts_with("--idir"){
+                    self.root_dir= PathBuf::from(&i.split_off(i.find("=").unwrap())[1..]).canonicalize().unwrap();
+                }else if i.starts_with("--steps=") || i.starts_with("-s="){ 
+                    self.steps = (i.split_off(i.find("=").unwrap()+1)).parse().expect("Steps has to be usize");
+                }else if i.starts_with("--memory="){ 
+                    self.memory = Some(i.split_off(i.find("=").unwrap()+1));
+                }else if i.starts_with("--sysprompt=") || i.starts_with("--prompt="){ 
+                    self.sprompt = Some(i.split_off(i.find("=").unwrap() + 1));
                 }
                  else {
                     Help();

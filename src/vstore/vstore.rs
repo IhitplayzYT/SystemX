@@ -5,6 +5,8 @@ use std::collections::{HashMap, HashSet};
 use uuid::Uuid;
 use regex::Regex;
 
+use crate::{helper::Helper::{COLLECTION_N, VSTORE_N}, vstore::vstore::Vstore};
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct VectorStoreConfig {
     pub path: String, // Where we store the embedded store for resilience
@@ -27,6 +29,12 @@ pub struct VectorStore {
     metadata_tree: Tree,
     text_tree: Tree,
     config: VectorStoreConfig,
+}
+
+impl Default for VectorStore{
+    fn default() -> Self {
+        VectorStore::new(VectorStoreConfig{path: VSTORE_N.to_string(),collection_name:COLLECTION_N.to_string()}).unwrap()
+    }
 }
 
 impl VectorStore {
