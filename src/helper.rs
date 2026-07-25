@@ -3,7 +3,7 @@
 pub mod Helper {
     use std::{fs::{self, exists}, path::Path};
 
-use crate::chunker::chunker::Chunker;
+use crate::{chunker::chunker::Chunker, vstore::embed::embed::EmbedMethod};
 
 
 
@@ -12,6 +12,8 @@ use crate::chunker::chunker::Chunker;
     pub const ERR: i32 = 1;
     pub const END_POINT:&str = "http://localhost:11434";
     pub const MODEL:&str = "llama3.2";
+    pub const VSTORE_N: &str = "./data/vstore";
+    pub const COLLECTION_N: &str = "document_chunks";
  
 
     #[derive(Debug,Clone)]
@@ -23,7 +25,12 @@ use crate::chunker::chunker::Chunker;
         pub query: String,
         pub context_file: Option<String>,
         pub model:String,
-        pub temp: f32
+        pub temp: f32,
+        pub vdim: usize,
+        pub vstore:Option<String>,
+        pub collection: Option<String>,
+        pub embed_model:Option<EmbedMethod>,
+        pub window_len: Option<usize>
         
     }
 
@@ -37,7 +44,12 @@ use crate::chunker::chunker::Chunker;
                 query: String::new(),
                 context_file: None,
                 model: "llama3.2".to_string(),
-                temp: 0.4
+                temp: 0.4,
+                vdim: 384,
+                vstore: None,
+                collection: None,
+                embed_model: None,
+                window_len: None
             }
         }
 
@@ -70,6 +82,16 @@ use crate::chunker::chunker::Chunker;
                     self.model = i[i.find("=").unwrap()+1..].trim().to_string();
                 } else if i.starts_with("--temp=") || i.starts_with("-t="){
                     self.temp = i[i.find("=").unwrap()+1..].trim().parse::<f32>().expect("Temp is a float between 0.0 - 2.0,decides creativity of model");
+                } else if i.starts_with("--vdim=") || i.starts_with("-n="){
+                    self.vdim = i[i.find("=").unwrap()+1..].trim().parse::<usize>().expect("Vdim is a usize which decides dimensions of embeddings");
+                } else if i.starts_with("--vstore=") || i.starts_with("-v="){
+                    self.vstore = Some(i[i.find("=").unwrap()+1..].trim().to_string());
+                } else if i.starts_with("--collection=") || i.starts_with("-c="){
+                    self.collection = Some(i[i.find("=").unwrap()+1..].trim().to_string());
+                } else if i.starts_with("--embed-model=") || i.starts_with("--embedder=") || i.starts_with("--embed=")|| i.starts_with("-e="){
+                    self.embed_model = Some(EmbedMethod::from(i[i.find("=").unwrap()+1..].trim().to_string()));
+                } else if i.starts_with("--winlen=") || i.starts_with("--win-len=") || i.starts_with("--win=") || i.starts_with("-w="){
+                    self.window_len = Some(i[i.find("=").unwrap()+1..].trim().parse::<usize>().expect("Win Len is a optional param that can be provided when using cluster embedder"));
                 }
                  else {
                     Help();

@@ -11,3 +11,4 @@ pub mod Print_WD;
 pub mod Change_Dir;
 pub mod GREP;
 pub mod FIND;
+pub mod Command;
