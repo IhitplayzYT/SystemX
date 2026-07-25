@@ -12,3 +12,4 @@ pub mod Change_Dir;
 pub mod GREP;
 pub mod FIND;
 pub mod Command;
+pub mod Rag_tools;
