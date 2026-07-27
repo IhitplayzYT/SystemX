@@ -13,3 +13,4 @@ pub mod GREP;
 pub mod FIND;
 pub mod Command;
 pub mod Rag_tools;
+pub mod Html;

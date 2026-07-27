@@ -134,7 +134,6 @@ impl Agent {
                     self.state = AgentState::ExecutingTool;
                     self.steps += 1;
 
-                    // Require user permission for Command tool
                     if name == "Command" {
                         println!("Agent wants to execute command: {:?}", arguments);
                         print!("Do you permit this? (Yes/y to confirm): ");

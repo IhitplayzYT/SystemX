@@ -1,7 +1,7 @@
-use std::{collections::{HashMap, HashSet}, fs};
+use std::{collections::{HashMap, HashSet}, fs, process::exit};
 use regex::Regex;
 
-use crate::{chunker::{char::chunk::CharChunker, chunker::{Chunk, Chunker, t_Chunk}, colon::chunk::ColonChunker, line::chunk::LineChunker, nchar::chunk::NCharChunker, nline::chunk::NLineChunker, npara::chunk::NParaChunker, nword::chunk::NWordChunker, para::chunk::ParaChunker, semantic::chunk::SemanticChunker, sentence::chunk::SentenceChunker, word::chunk::WordChunker}, helper::Helper::{CLI, COLLECTION_N, VSTORE_N, unwrap_dirs}, model::agent::Agent::Agent, tools::tools::Tools::ToolRegistry, vstore::{embed::embed::{EmbedMethod, generate_embedding}, vstore::Vstore::{VectorStore, VectorStoreConfig}}};
+use crate::{chunker::{char::chunk::CharChunker, chunker::{Chunk, Chunker, t_Chunk}, colon::chunk::ColonChunker, line::chunk::LineChunker, nchar::chunk::NCharChunker, nline::chunk::NLineChunker, npara::chunk::NParaChunker, nword::chunk::NWordChunker, para::chunk::ParaChunker, semantic::chunk::SemanticChunker, sentence::chunk::SentenceChunker, word::chunk::WordChunker}, helper::Helper::{CLI, COLLECTION_N, VSTORE_N, unwrap_dirs}, ingestors::Ingestor::ingestor::ingest, model::agent::Agent::{Agent, AgentConfig, Memory, Ollama}, tools::tools::Tools::{ToolRegistry, generate_tool_guide, insert_tools}, vstore::{embed::embed::{EmbedMethod, generate_embedding}, vstore::Vstore::{VectorStore, VectorStoreConfig}}};
 
 mod chunker;
 mod ingestors;
@@ -10,29 +10,10 @@ mod tools;
 mod vstore;
 mod helper;
 
-fn generate_tool_guide(tools: &ToolRegistry) -> String {
-    let tool_names = tools.get_all();
-    format!(
-        "You have access to the following tools: {}\n\n\
-        When you need to use a tool, respond with a JSON object in this format:\n\
-        {{\n\
-            \"type\": \"tool\",\n\
-            \"name\": \"tool_name\",\n\
-            \"arguments\": {{\n\
-                \"param1\": \"value1\",\n\
-                \"param2\": \"value2\"\n\
-            }}\n\
-        }}\n\n\
-        When you have completed the task and have a final answer for the user, respond with:\n\
-        {{\n\
-            \"type\": \"final\",\n\
-            \"content\": \"your final response here\"\n\
-        }}",
-        tool_names
-    )
-}
 
-fn main() {
+
+#[tokio::main]
+async fn main() {
     let mut clargs = CLI::new();
     CLI::Parse_Args(&mut clargs);
     if clargs.query.is_empty(){
@@ -41,12 +22,17 @@ fn main() {
     if clargs.query.is_empty(){
         panic!("No query provided");
     }
+    if clargs.sprompt.is_none(){
+        eprintln!("System prompt is required");
+        exit(0);
+    }
+
     if clargs.debug{
         println!("{clargs:?}");
     }
-
+    
     unwrap_dirs(clargs.srcdir,&mut clargs.srcfile);
-    let src_files: HashSet<_> = clargs.srcfile.iter().collect();
+    let src_files: HashSet<_> = clargs.srcfile.iter().collect();    
     let history = fs::read_to_string(clargs.context_file.unwrap()).unwrap();
     
     let chunker:Box<dyn t_Chunk> = match clargs.chunker{
@@ -64,8 +50,8 @@ fn main() {
     };
 
     let mut chunk_map: HashMap<&String,Vec<Chunk>> = HashMap::new();
-    for i in &src_files{
-        chunk_map.insert(*i,chunker.chunk(&fs::read_to_string(i).unwrap()));
+    for i in src_files{
+        chunk_map.insert(i,chunker.chunk(&ingest(i).await));
     }
     let (vstore_path,collection_name) = ( if let Some(x) = clargs.vstore {x} else{VSTORE_N.to_string()}, if let Some(x) = clargs.collection {x} else{COLLECTION_N.to_string()});
 
@@ -96,20 +82,13 @@ fn main() {
         
 
  let mut agent = Agent::new(clargs.root_dir,Some(Box::new(Ollama::new(Some(clargs.url),Some(clargs.model)))), None,if let Some(x) = clargs.memory{Some(serde_json::from_str::<Memory>(&fs::read_to_string(x).unwrap()[..]).unwrap())}else{None},Some(clargs.steps),Some(AgentConfig::new(Some(clargs.steps), Some(clargs.token_limits.0), Some(clargs.token_limits.1), Some(clargs.token_limits.2), Some(clargs.temp))));
-    if let Some(x) = clargs.sprompt{
-        agent.memory.push_system(x);
-    }else{
-        eprintln!("System prompt is required for Modelling");
-        exit(0);
-    }
-
+    
+    agent.memory.push_system(clargs.sprompt.unwrap());
     insert_tools(&mut agent.tools);
-
-    // Add tool guide to system prompt
     let tool_guide = generate_tool_guide(&agent.tools);
     agent.memory.push_system(tool_guide);
 
-    if clargs.dbg{
+    if clargs.debug{
         println!("{}",agent);
     }   
 

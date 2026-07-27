@@ -1,7 +1,7 @@
 pub mod Tools{
     use std::{collections::HashMap, path::PathBuf};
 
-use crate::tools::{Cargo_Call::cargo_call::cargo, Cat_File::cat_file::cat, Change_Dir::change_dir::cd, Create_Dir::create_dir::mkdir, Create_File::create_file::touch, FIND::find::find, GREP::grep::Grep, List_Dir::list_dir::ls, Modify_File::modify_file::edit, Print_WD::print_wd::pwd, Remove_Dir::remove_dir::rm, Write_File::write_file::write_file, Rag_tools::rag_tools::{get_top_k_default, filter_by_metadata_default}};
+use crate::tools::{Cargo_Call::cargo_call::cargo, Cat_File::cat_file::cat, Change_Dir::change_dir::cd, Command::command::Bash, Create_Dir::create_dir::mkdir, Create_File::create_file::touch, FIND::find::find, GREP::grep::Grep, Html::html::{Get_html, Get_html_selectors}, List_Dir::list_dir::ls, Modify_File::modify_file::edit, Print_WD::print_wd::pwd, Rag_tools::rag_tools::{filter_by_metadata_default, get_top_k_default}, Remove_Dir::remove_dir::rm, Write_File::write_file::write_file};
 
 
 pub struct AgentContext {
@@ -151,10 +151,37 @@ impl ToolRegistry {
         reg.register(pwd); 
         reg.register(rm); 
         reg.register(write_file); 
+        reg.register(Bash);
+        reg.register(Get_html);
+        reg.register(Get_html_selectors);
         reg.register(get_top_k_default());
         reg.register(filter_by_metadata_default());
+        
 
     }
+
+pub fn generate_tool_guide(tools: &ToolRegistry) -> String {
+    let tool_names = tools.get_all();
+    format!(
+        "You have access to the following tools: {}\n\n\
+        When you need to use a tool, respond with a JSON object in this format:\n\
+        {{\n\
+            \"type\": \"tool\",\n\
+            \"name\": \"tool_name\",\n\
+            \"arguments\": {{\n\
+                \"param1\": \"value1\",\n\
+                \"param2\": \"value2\"\n\
+            }}\n\
+        }}\n\n\
+        When you have completed the task and have a final answer for the user, respond with:\n\
+        {{\n\
+            \"type\": \"final\",\n\
+            \"content\": \"your final response here\"\n\
+        }}",
+        tool_names
+    )
+}
+
 
 
 }

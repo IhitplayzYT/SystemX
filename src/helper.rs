@@ -14,7 +14,10 @@ use crate::{chunker::chunker::Chunker, vstore::embed::embed::EmbedMethod};
     pub const MODEL:&str = "llama3.2";
     pub const VSTORE_N: &str = "./data/vstore";
     pub const COLLECTION_N: &str = "document_chunks";
- 
+    pub const T_MIN:usize = 0;
+    pub const T_MAX:usize = 100000;
+    pub const TO_MAX:usize = 8192;
+    pub const STEPS:usize = 20;
 
     #[derive(Debug,Clone)]
     pub struct CLI {
@@ -30,7 +33,7 @@ use crate::{chunker::chunker::Chunker, vstore::embed::embed::EmbedMethod};
         pub vstore:Option<String>,
         pub collection: Option<String>,
         pub embed_model:Option<EmbedMethod>,
-        pub window_len: Option<usize>
+        pub window_len: Option<usize>,
         pub url: String,
         pub token_limits:(usize,usize,usize), // (min_context,max_context,max_output)
         pub root_dir: PathBuf,
@@ -54,7 +57,13 @@ use crate::{chunker::chunker::Chunker, vstore::embed::embed::EmbedMethod};
                 vstore: None,
                 collection: None,
                 embed_model: None,
-                window_len: None
+                window_len: None,
+                memory:None,
+                url:END_POINT.to_string(),
+                token_limits: (T_MIN,T_MAX,TO_MAX),
+                root_dir:std::env::current_dir().unwrap(),
+                steps:STEPS,
+                sprompt:None
             }
         }
 
@@ -110,13 +119,13 @@ use crate::{chunker::chunker::Chunker, vstore::embed::embed::EmbedMethod};
                     self.token_limits.2 = i[i.find("=").unwrap()+1..].trim().parse::<usize>().expect("Max Output Tokens is a non negative usize"); 
                 }
                  else if i.starts_with("--root=") || i.starts_with("--idir"){
-                    self.root_dir= PathBuf::from(&i.split_off(i.find("=").unwrap())[1..]).canonicalize().unwrap();
+                    self.root_dir= PathBuf::from(i[i.find("=").unwrap()+1..].trim()).canonicalize().unwrap();
                 }else if i.starts_with("--steps=") || i.starts_with("-s="){ 
-                    self.steps = (i.split_off(i.find("=").unwrap()+1)).parse().expect("Steps has to be usize");
+                    self.steps = i[i.find("=").unwrap()+1..].trim().parse().expect("Steps has to be usize");
                 }else if i.starts_with("--memory="){ 
-                    self.memory = Some(i.split_off(i.find("=").unwrap()+1));
+                    self.memory = Some(i[i.find("=").unwrap()+1..].trim().to_string());
                 }else if i.starts_with("--sysprompt=") || i.starts_with("--prompt="){ 
-                    self.sprompt = Some(i.split_off(i.find("=").unwrap() + 1));
+                    self.sprompt = Some(i[i.find("=").unwrap()+1..].trim().to_string());
                 }
                  else {
                     Help();
