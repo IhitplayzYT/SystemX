@@ -19,9 +19,6 @@ async fn main() {
     if clargs.query.is_empty(){
         panic!("No query provided")
     }
-    if clargs.query.is_empty(){
-        panic!("No query provided");
-    }
     if clargs.sprompt.is_none(){
         eprintln!("System prompt is required");
         exit(0);
